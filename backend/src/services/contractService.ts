@@ -23,7 +23,7 @@ export const getContractsOfUser = async (userId: string) => {
 		const contracts: any[] = [];
 
 		for (const cashkick of cashkicks) {
-			const cashkickContracts = cashkick?.dataValues?.contracts ?? [];
+			const cashkickContracts = cashkick.dataValues.contracts;
 			for (const contract of cashkickContracts) {
 				const cashkicks_contracts = await Cashkick_Contract.findOne({
 					where: {
