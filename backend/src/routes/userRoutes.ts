@@ -25,5 +25,4 @@ router.patch(
 
 router.get("/all", authenticate, userController.getUsers);
 
-
 export default router;

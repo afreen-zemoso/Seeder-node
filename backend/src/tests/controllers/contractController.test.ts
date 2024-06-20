@@ -5,7 +5,7 @@ import {
 } from "../../../src/controllers/contract";
 import * as contractService from "../../../src/services/contractService"; // corrected import path
 import redisClient from "../../../src/util/redisClient"; // corrected import path
-import { CONTRACT_MESSAGES } from "../../../src/util/constants"; // corrected import path
+import { CONTRACT_MESSAGES, STRINGS } from "../../../src/util/constants"; // corrected import path
 import { StatusCodes } from "http-status-codes";
 
 // Mocking dependencies
@@ -44,7 +44,7 @@ describe("Contract Controller", () => {
 				contracts
 			);
 			mockReq.query = { userId };
-			mockReq.originalUrl = `/contracts?userId=${userId}`; // Setting originalUrl properly
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`; // Setting originalUrl properly
 
 			await getContractsOfUser(
 				mockReq as Request,
@@ -56,7 +56,7 @@ describe("Contract Controller", () => {
 				userId
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/contracts?userId=${userId}`,
+				`/${STRINGS.CONTRACTS}?userId=${userId}`,
 				3600,
 				JSON.stringify(contracts)
 			);
@@ -73,7 +73,7 @@ describe("Contract Controller", () => {
 				error
 			);
 			mockReq.query = { userId };
-			mockReq.originalUrl = `/contracts?userId=${userId}`; // Setting originalUrl properly
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`; // Setting originalUrl properly
 
 			await getContractsOfUser(
 				mockReq as Request,
@@ -91,7 +91,7 @@ describe("Contract Controller", () => {
 				newContractResponse
 			);
 			mockReq.body = { name: "Contract 1", userId };
-			mockReq.originalUrl = `/contracts`; // Setting originalUrl properly
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`; // Setting originalUrl properly
 
 			await createContract(
 				mockReq as Request,
@@ -103,7 +103,7 @@ describe("Contract Controller", () => {
 				mockReq.body
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/contracts`,
+				`/${STRINGS.CONTRACTS}`,
 				3600,
 				JSON.stringify(newContractResponse)
 			);
@@ -119,7 +119,7 @@ describe("Contract Controller", () => {
 				error
 			);
 			mockReq.body = { name: "Contract 1", userId };
-			mockReq.originalUrl = `/contracts`; // Setting originalUrl properly
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`; // Setting originalUrl properly
 
 			await createContract(
 				mockReq as Request,

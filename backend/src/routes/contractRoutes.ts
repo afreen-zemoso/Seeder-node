@@ -2,9 +2,9 @@ import { Router } from "express";
 import authenticate from "../middleware/authMiddleware";
 import { createContractRequestValidation } from "../validations/contract";
 import { handleValidationErrors } from "../middleware/validationMiddleware";
+import * as contractController from "../controllers/contract";
 
 const router = Router();
-const contractController = require("../controllers/contract");
 
 router.get("/", authenticate, contractController.getContractsOfUser);
 

@@ -13,6 +13,8 @@ export const AUTH_MESSAGES = {
 	LOGIN_ERROR: "An error occurred while logging in",
 	EMAIL_INCORRECT: "Email Id is Incorrect",
 	PASSWORD_INCORRECT: "Password is Incorrect",
+	ACCESS_DENIED: "Access denied, no token provided",
+	INVALID_TOKEN: "Invalid token",
 };
 export const CASHKICK_MESSAGES = {
 	SUCCESS_FETCH: "Successfully fetched cashkicks",
@@ -54,6 +56,7 @@ export const USER_MESSAGES = {
 	EMAIL_EXIST: "User with this email already exists",
 	INVALID_OLD_PASSWORD:
 		"The chosen password is not available. Please choose a different password.",
+	REQUIRED_EMAIL: "Email query parameter is required",
 };
 
 // src/stringConstants/validationConstants.ts
@@ -90,4 +93,22 @@ export const VALIDATION_MESSAGES = {
 	ERROR_TERM_LENGTH_NUMBER: "Term length must be a number.",
 	ERROR_PAYMENT_AMOUNT_REQUIRED: "Payment amount is required.",
 	ERROR_PAYMENT_AMOUNT_NUMBER: "Payment amount must be a number.",
+};
+
+export const STRINGS = {
+	CASHKICKS: "cashkicks",
+	CONTRACTS: "contracts",
+	USERS: "users",
+	NAME: "name",
+	STATUS: "status",
+	TOTAL_RECEIVED: "totalReceived",
+	USER_ID: "userId",
+	MATURITY: "maturity",
+	TYPE: "type",
+	PER_PAYMENT: "perPayment",
+	TERM_LENGTH: "termLength",
+	PAYMENT_AMOUNT: "paymentAmount",
+	EMAIL: "email",
+	PASSWORD: "password",
+	ID: "id",
 };

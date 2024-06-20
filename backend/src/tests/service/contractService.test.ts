@@ -5,7 +5,7 @@ import {
 import Cashkick from "../../models/cashkick";
 import Cashkick_Contract from "../../models/cashkick_contract";
 import Contract from "../../models/contract";
-import { CONTRACT_MESSAGES } from "../../util/constants";
+import { CONTRACT_MESSAGES, STRINGS } from "../../util/constants";
 import { Contract as ContractBody, UserContract } from "../../interfaces/index";
 import { contractStatus, contractType } from "../../enums";
 
@@ -57,7 +57,7 @@ describe("Contract Service", () => {
 				include: [
 					{
 						model: Contract,
-						as: "contracts",
+						as: STRINGS.CONTRACTS,
 						through: { attributes: [] },
 					},
 				],
@@ -96,7 +96,7 @@ describe("Contract Service", () => {
 				include: [
 					{
 						model: Contract,
-						as: "contracts",
+						as: STRINGS.CONTRACTS,
 						through: { attributes: [] },
 					},
 				],

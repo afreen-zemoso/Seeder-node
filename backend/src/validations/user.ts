@@ -1,18 +1,18 @@
 import { body, param } from "express-validator";
-import { VALIDATION_MESSAGES } from "../util/constants";
+import { STRINGS, VALIDATION_MESSAGES } from "../util/constants";
 
 export const createUserRequestValidation = [
-	body("name")
+	body(STRINGS.NAME)
 		.trim()
 		.isLength({ min: 3 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_NAME_REQUIRED),
 
-	body("email")
+	body(STRINGS.EMAIL)
 		.trim()
 		.isEmail()
 		.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_EMAIL),
 
-	body("password")
+	body(STRINGS.PASSWORD)
 		.trim()
 		.custom((password) => {
 			if (!VALIDATION_MESSAGES.PASSWORD_REGEX.test(password)) {
@@ -23,15 +23,14 @@ export const createUserRequestValidation = [
 			return true;
 		})
 		.withMessage(VALIDATION_MESSAGES.ERROR_PASSWORD_REQUIREMENTS),
-
 ];
 
 export const updateUserRequestValidation = [
-	param("id")
+	param(STRINGS.ID)
 		.isString()
 		.withMessage(VALIDATION_MESSAGES.ERROR_USER_ID_REQUIRED),
 
-	body("password")
+	body(STRINGS.PASSWORD)
 		.optional()
 		.trim()
 		.custom((password) => {

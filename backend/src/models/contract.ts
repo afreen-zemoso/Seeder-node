@@ -2,9 +2,10 @@ import { Model, DataType, Table, Column, BelongsToMany, ForeignKey, BelongsTo, A
 import Cashkick from "./cashkick";
 import User from "./user";
 import { contractStatus, contractType } from "../enums";
+import { STRINGS } from "../util/constants";
 
 @Table({
-	tableName: "contracts",
+	tableName: STRINGS.CONTRACTS,
 })
 class Contract extends Model {
 	@Column({

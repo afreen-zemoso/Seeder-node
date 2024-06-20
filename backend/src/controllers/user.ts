@@ -38,7 +38,7 @@ export const getUserByEmail = async (
 
 			res.status(StatusCodes.OK).json(user);
 		} else {
-			throw new Error("Email query parameter is required");
+			throw new Error(USER_MESSAGES.REQUIRED_EMAIL);
 		}
 	} catch (error) {
 		next(error);

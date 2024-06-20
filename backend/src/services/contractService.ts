@@ -2,7 +2,7 @@ import { Contract as ContractBody } from "../interfaces/index";
 import Cashkick from "../models/cashkick";
 import Cashkick_Contract from "../models/cashkick_contract";
 import Contract from "../models/contract";
-import { CONTRACT_MESSAGES } from "../util/constants";
+import { CONTRACT_MESSAGES, STRINGS } from "../util/constants";
 
 export const getContractsOfUser = async (userId: string) => {
 	try {
@@ -15,7 +15,7 @@ export const getContractsOfUser = async (userId: string) => {
 			include: [
 				{
 					model: Contract,
-					as: "contracts",
+					as: STRINGS.CONTRACTS,
 					through: { attributes: [] },
 				},
 			],

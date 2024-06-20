@@ -5,7 +5,7 @@ import {
 } from "../../../src/controllers/cashkick";
 import * as cashkickService from "../../services/cashkickService";
 import redisClient from "../../util/redisClient";
-import { CASHKICK_MESSAGES } from "../../util/constants";
+import { CASHKICK_MESSAGES, STRINGS } from "../../util/constants";
 import { StatusCodes } from "http-status-codes";
 
 // Mocking dependencies
@@ -33,9 +33,9 @@ describe("Cashkick Controller", () => {
 		mockNext = jest.fn();
 	});
 
-	afterEach(async() => {
+	afterEach(async () => {
 		jest.clearAllMocks();
-		await redisClient.quit(); 
+		await redisClient.quit();
 	});
 
 	describe("getUserCashkicks", () => {
@@ -44,7 +44,7 @@ describe("Cashkick Controller", () => {
 				cashkicks
 			);
 			mockReq.params = { userId };
-			mockReq.originalUrl = `/cashkicks/user/${userId}`;
+			mockReq.originalUrl = `/${STRINGS.CASHKICKS}/${userId}`;
 
 			await getUserCashkicks(
 				mockReq as Request,
@@ -56,7 +56,7 @@ describe("Cashkick Controller", () => {
 				userId
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/cashkicks/user/${userId}`,
+				`/${STRINGS.CASHKICKS}/${userId}`,
 				3600,
 				JSON.stringify(cashkicks)
 			);
@@ -102,7 +102,7 @@ describe("Cashkick Controller", () => {
 				mockReq.body
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/cashkicks`,
+				`/${STRINGS.CASHKICKS}`,
 				3600,
 				JSON.stringify(newCashkickResponse)
 			);

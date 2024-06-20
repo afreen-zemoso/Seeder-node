@@ -3,6 +3,7 @@ import * as authService from "../../services/authService";
 import redisClient from "../../util/redisClient";
 import { InvalidCredentialsError } from "../../errors/InvalidCredentialsError";
 import { postLogin } from "../../controllers/auth";
+import { STRINGS } from "../../util/constants";
 
 jest.mock("../../services/authService");
 jest.mock("../../util/redisClient", () => ({
@@ -15,7 +16,7 @@ describe("postLogin", () => {
 
 	beforeEach(() => {
 		req = {
-			body: { email: "test@example.com", password: "password" },
+			body: { email: "test@example.com", password: STRINGS.PASSWORD },
 			originalUrl: "/login",
 		};
 		res = {
@@ -27,9 +28,8 @@ describe("postLogin", () => {
 
 	afterEach(async () => {
 		jest.clearAllMocks();
-		await redisClient.quit(); 
+		await redisClient.quit();
 	});
-
 
 	it("should return 200 and token on successful login", async () => {
 		const token = "fake-jwt-token";

@@ -11,9 +11,10 @@ import {
 import Contract from "./contract";
 import { CashkicksStatus } from "../enums";
 import User from "./user";
+import { STRINGS } from "../util/constants";
 
 @Table({
-	tableName: "cashkicks",
+	tableName: STRINGS.CASHKICKS,
 })
 class Cashkick extends Model {
 	@Column({
@@ -44,7 +45,7 @@ class Cashkick extends Model {
 
 	@BelongsTo(() => User)
 	user!: User;
-	
+
 	// Define a many-to-many relationship between Cashkick and Contract
 	@BelongsToMany(
 		() => Contract,

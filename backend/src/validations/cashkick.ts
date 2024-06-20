@@ -1,36 +1,36 @@
 import { body } from "express-validator";
 import { CashkicksStatus } from "../enums";
-import { VALIDATION_MESSAGES } from "../util/constants";
+import { STRINGS, VALIDATION_MESSAGES } from "../util/constants";
 
 export const createCashkickRequestValidation = [
-	body("name")
+	body(STRINGS.NAME)
 		.trim()
 		.isLength({ min: 1 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_NAME_REQUIRED),
 
-	body("status")
+	body(STRINGS.MATURITY)
 		.notEmpty()
 		.withMessage(VALIDATION_MESSAGES.ERROR_STATUS_REQUIRED)
 		.isIn(Object.values(CashkicksStatus))
 		.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_STATUS),
 
-	body("maturity")
+	body(STRINGS.MATURITY)
 		.notEmpty()
 		.withMessage(VALIDATION_MESSAGES.ERROR_MATURITY_REQUIRED)
 		.isISO8601()
 		.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_MATURITY),
 
-	body("totalReceived")
+	body(STRINGS.TOTAL_RECEIVED)
 		.notEmpty()
 		.isFloat({ min: 0 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_AMOUNT),
 
-	body("userId")
+	body(STRINGS.USER_ID)
 		.trim()
 		.isUUID()
 		.withMessage(VALIDATION_MESSAGES.ERROR_USER_ID_REQUIRED),
 
-	body("contracts")
+	body(STRINGS.CONTRACTS)
 		.isArray({ min: 1 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_CONTRACT_ID_REQUIRED)
 		.custom((value) => {

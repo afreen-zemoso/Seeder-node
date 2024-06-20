@@ -1,9 +1,10 @@
 import { Model, DataType, Table, Column, HasMany, BeforeCreate, BeforeUpdate, BeforeBulkUpdate } from "sequelize-typescript";
 import bcrypt from "bcrypt";
 import Cashkick from "./cashkick";
+import { STRINGS } from "../util/constants";
 
 @Table({
-	tableName: "users",
+	tableName: STRINGS.USERS,
 })
 class User extends Model {
 	@Column({
@@ -37,7 +38,7 @@ class User extends Model {
 	@BeforeCreate
 	@BeforeUpdate
 	static async hashPassword(instance: User) {
-		if (instance.changed("password")) {
+		if (instance.changed(STRINGS.PASSWORD)) {
 			const salt = await bcrypt.genSalt(10);
 			instance.password = await bcrypt.hash(instance.password, salt);
 		}

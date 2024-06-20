@@ -9,7 +9,7 @@ import * as userService from "../../services/userService";
 import redisClient from "../../util/redisClient";
 import { StatusCodes } from "http-status-codes";
 import { NotFoundError } from "../../errors/NotFoundError";
-import { USER_MESSAGES } from "../../util/constants";
+import { STRINGS, USER_MESSAGES } from "../../util/constants";
 
 // Mocking dependencies
 jest.mock("../../services/userService");
@@ -32,9 +32,9 @@ describe("User Controller", () => {
 		mockNext = jest.fn();
 	});
 
-	afterEach(async() => {
+	afterEach(async () => {
 		jest.clearAllMocks();
-        await redisClient.quit(); 
+		await redisClient.quit();
 	});
 
 	describe("createUser", () => {
@@ -42,13 +42,13 @@ describe("User Controller", () => {
 			const successMsg = "User created successfully";
 			(userService.createUser as jest.Mock).mockResolvedValue(successMsg);
 			mockReq.body = { name: "John Doe", email: "john@example.com" };
-			mockReq.originalUrl = `/users`;
+			mockReq.originalUrl = `/${STRINGS.USERS}`;
 
 			await createUser(mockReq as Request, mockRes as Response, mockNext);
 
 			expect(userService.createUser).toHaveBeenCalledWith(mockReq.body);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/users`,
+				`/${STRINGS.USERS}`,
 				3600,
 				JSON.stringify(successMsg)
 			);
@@ -76,7 +76,7 @@ describe("User Controller", () => {
 			};
 			(userService.getUserByEmail as jest.Mock).mockResolvedValue(user);
 			mockReq.query = { email: "john@example.com" };
-			mockReq.originalUrl = `/users?email=john@example.com`;
+			mockReq.originalUrl = `/${STRINGS.USERS}?email=john@example.com`;
 
 			await getUserByEmail(
 				mockReq as Request,
@@ -88,7 +88,7 @@ describe("User Controller", () => {
 				"john@example.com"
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/users?email=john@example.com`,
+				`/${STRINGS.USERS}?email=john@example.com`,
 				3600,
 				JSON.stringify(user)
 			);
@@ -120,7 +120,7 @@ describe("User Controller", () => {
 			);
 
 			expect(mockNext).toHaveBeenCalledWith(
-				new Error("Email query parameter is required")
+				new Error(USER_MESSAGES.REQUIRED_EMAIL)
 			);
 		});
 	});
@@ -140,7 +140,7 @@ describe("User Controller", () => {
 				mockReq.body
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/users/1`,
+				`/${STRINGS.USERS}/1`,
 				3600,
 				JSON.stringify(successMsg)
 			);
@@ -166,13 +166,13 @@ describe("User Controller", () => {
 				{ id: "1", name: "John Doe", email: "john@example.com" },
 			];
 			(userService.getUsers as jest.Mock).mockResolvedValue(users);
-			mockReq.originalUrl = `/users`;
+			mockReq.originalUrl = `/${STRINGS.USERS}`;
 
 			await getUsers(mockReq as Request, mockRes as Response, mockNext);
 
 			expect(userService.getUsers).toHaveBeenCalled();
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/users`,
+				`/${STRINGS.USERS}`,
 				3600,
 				JSON.stringify(users)
 			);

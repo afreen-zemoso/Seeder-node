@@ -7,8 +7,7 @@ export interface User {
 	email: string;
 	password: string;
 	creditBalance?: number;
-	payments?: string[];
-	contracts?: string[];
+	cashkicks?: string[];
 };
 
 export interface Cashkick {
