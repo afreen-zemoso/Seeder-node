@@ -11,7 +11,7 @@ import { NotFoundError } from "../../errors/NotFoundError";
 jest.mock("../../models/user");
 jest.mock("../../util/constants");
 
-import { User as UserBody, userUpdateBody } from "../../interfaces/index";
+import { User as UserBody, UserUpdateBody } from "../../interfaces/index";
 
 describe("User Service", () => {
 	let user: UserBody = {
@@ -62,7 +62,9 @@ describe("User Service", () => {
 
 			const result = await getUserByEmail(userEmail);
 			expect(result).toEqual(user);
-			expect(User.findOne).toHaveBeenCalledWith({ where: { email: userEmail } });
+			expect(User.findOne).toHaveBeenCalledWith({
+				where: { email: userEmail },
+			});
 		});
 
 		it("should throw an error when user not found", async () => {
@@ -80,7 +82,7 @@ describe("User Service", () => {
 	});
 
 	describe("updateUser", () => {
-		const updateBody: userUpdateBody = { password: "pwd123" };
+		const updateBody: UserUpdateBody = { password: "pwd123" };
 		it("should update a user and return success message", async () => {
 			const userId = "1";
 			(User.update as jest.Mock).mockResolvedValue([1]);

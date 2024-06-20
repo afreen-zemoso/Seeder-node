@@ -1,4 +1,4 @@
-import e, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import * as userService from "../services/userService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
@@ -15,10 +15,10 @@ export const createUser = async (
 
 		const key = req.originalUrl;
 		redisClient.setEx(key, 3600, JSON.stringify(successMsg));
-		
+
 		res.status(StatusCodes.CREATED).json({ message: successMsg });
 	} catch (error) {
-        next(error);
+		next(error);
 	}
 };
 
@@ -29,22 +29,19 @@ export const getUserByEmail = async (
 ) => {
 	try {
 		const emailId = req.query.email;
-		if(emailId)
-		{
-		const user = await userService.getUserByEmail(emailId as string);
-		if(!user)
-			throw new NotFoundError(USER_MESSAGES.ERROR_FETCH);
+		if (emailId) {
+			const user = await userService.getUserByEmail(emailId as string);
+			if (!user) throw new NotFoundError(USER_MESSAGES.ERROR_FETCH);
 
-		const key = req.originalUrl;
-		redisClient.setEx(key, 3600, JSON.stringify(user));
+			const key = req.originalUrl;
+			redisClient.setEx(key, 3600, JSON.stringify(user));
 
-		res.status(StatusCodes.OK).json(user);
-		}
-		else {
+			res.status(StatusCodes.OK).json(user);
+		} else {
 			throw new Error("Email query parameter is required");
 		}
 	} catch (error) {
-        next(error);
+		next(error);
 	}
 };
 

@@ -1,11 +1,16 @@
-import { User as UserBody, userUpdateBody } from "../interfaces/index";
+import { User as UserBody, UserUpdateBody } from "../interfaces/index";
 import User from "../models/user";
 import { NotFoundError } from "../errors/NotFoundError";
 import { USER_MESSAGES } from "../util/constants";
 
 export const createUser = async (body: UserBody) => {
 	try {
-		await User.create({ ...body, creditBalance: 10000, rate: 12, termCap: 12 });
+		await User.create({
+			...body,
+			creditBalance: 10000,
+			rate: 12,
+			termCap: 12,
+		});
 		return USER_MESSAGES.SUCCESS_ADD;
 	} catch (error) {
 		console.error(error);
@@ -16,7 +21,7 @@ export const createUser = async (body: UserBody) => {
 export const getUserByEmail = async (email: string) => {
 	try {
 		const user = await User.findOne({
-			where: { email }
+			where: { email },
 		});
 		return user;
 	} catch (error) {
@@ -25,7 +30,7 @@ export const getUserByEmail = async (email: string) => {
 	}
 };
 
-export const updateUser = async (userId: string, body: userUpdateBody) => {
+export const updateUser = async (userId: string, body: UserUpdateBody) => {
 	try {
 		await User.update(
 			{ ...body },

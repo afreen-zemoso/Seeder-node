@@ -15,7 +15,8 @@ export const getUserCashkicks = async (userId: string) => {
 		cashkicks.map((cashkick: Cashkick) => {
 			const userCashkick = cashkick.dataValues;
 			const { totalReceived } = userCashkick;
-			const totalFinanced = totalReceived + totalReceived * (user!.rate / 100);
+			const totalFinanced =
+				totalReceived + totalReceived * (user.rate / 100);
 			userCashkicks.push({...userCashkick, totalFinanced: totalFinanced })
 		})
 		return userCashkicks;

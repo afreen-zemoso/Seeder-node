@@ -52,13 +52,13 @@ export interface LoginRequestBody {
 	password: string;
 }
 
-export interface validationBody {
+export interface ValidationBody {
 	isSuccess: boolean;
 	message?: string;
 	token?: string;
 }
 
-export interface userUpdateBody {
+export interface UserUpdateBody {
 	password?: string;
 	creditBalance?: number;
 }
