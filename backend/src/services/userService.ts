@@ -1,4 +1,4 @@
-import { UserDetails as UserBody, UserUpdateBody } from "../interfaces/index";
+import { UserUpdateBody } from "../interfaces/index";
 import User from "../models/user";
 import { NotFoundError } from "../errors/NotFoundError";
 import { USER_MESSAGES } from "../util/constants";
@@ -7,7 +7,7 @@ export const getUserByEmail = async (email: string) => {
 	try {
 		const user = await User.findOne({
 			where: { email },
-			attributes: { exclude: ["password"] }, 
+			attributes: { exclude: ["password"] },
 		});
 		return user;
 	} catch (error) {

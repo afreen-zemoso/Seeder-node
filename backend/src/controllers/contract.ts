@@ -19,7 +19,7 @@ export const getContractsOfUser = async (
 			let key = req.originalUrl;
 			const userId = req.query.userId;
 			contracts = userId
-				? await contractService.getContractsOfUser(userId as string)
+				? await contractService.getContractsOfUser(userId)
 				: await contractService.getAllContracts();
 
 			if(req.user)

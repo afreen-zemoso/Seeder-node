@@ -19,7 +19,7 @@ export const getUserByEmail = async (
 		let user = req.cachedData;
 		if(!user)
 		{
-			user = await userService.getUserByEmail(emailId as string);
+			user = await userService.getUserByEmail(emailId);
 			if(req.user)
 			{
 				const key = req.originalUrl + req.user.id;
