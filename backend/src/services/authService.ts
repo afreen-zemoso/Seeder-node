@@ -1,6 +1,6 @@
-import { LoginRequestBody } from "../interfaces";
+import { UserDetails as UserBody, LoginRequestBody } from "../interfaces";
 import User from "../models/user";
-import { AUTH_MESSAGES, SECRET_KEY } from "../util/constants";
+import { AUTH_MESSAGES, SECRET_KEY, USER_MESSAGES } from "../util/constants";
 import jwt from "jsonwebtoken";
 
 export const userLogin = async (body: LoginRequestBody) => {
@@ -20,5 +20,21 @@ export const userLogin = async (body: LoginRequestBody) => {
 	} catch (error) {
 		console.error(error);
 		throw new Error(AUTH_MESSAGES.LOGIN_ERROR);
+	}
+};
+
+
+export const userSignUp = async (body: UserBody) => {
+	try {
+		await User.create({
+			...body,
+			creditBalance: 10000,
+			rate: 12,
+			termCap: 12,
+		});
+		return USER_MESSAGES.SUCCESS_ADD;
+	} catch (error) {
+		console.error(error);
+		throw new Error(USER_MESSAGES.ERROR_ADD);
 	}
 };

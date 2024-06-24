@@ -1,7 +1,6 @@
 import { Model, DataType, Table, Column, BelongsToMany, ForeignKey, BelongsTo, AutoIncrement } from "sequelize-typescript";
 import Cashkick from "./cashkick";
-import User from "./user";
-import { contractStatus, contractType } from "../enums";
+import { ContractStatus, ContractType } from "../enums";
 import { STRINGS } from "../util/constants";
 
 @Table({
@@ -19,16 +18,16 @@ class Contract extends Model {
 	name!: string;
 
 	@Column({
-		type: DataType.ENUM(...Object.values(contractStatus)),
+		type: DataType.ENUM(...Object.values(ContractStatus)),
 		allowNull: false,
 	})
-	status!: contractStatus;
+	status!: ContractStatus;
 
 	@Column({
-		type: DataType.ENUM(...Object.values(contractType)),
+		type: DataType.ENUM(...Object.values(ContractType)),
 		allowNull: false,
 	})
-	type!: contractType;
+	type!: ContractType;
 
 	@Column({ type: DataType.INTEGER, allowNull: false })
 	perPayment!: number;

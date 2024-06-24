@@ -1,26 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import {
-	getContractsOfUser,
-	createContract,
-} from "../../../src/controllers/contract";
-import * as contractService from "../../../src/services/contractService"; // corrected import path
-import redisClient from "../../../src/util/redisClient"; // corrected import path
-import { CONTRACT_MESSAGES, STRINGS } from "../../../src/util/constants"; // corrected import path
+import * as contractService from "../../services/contractService";
+import redisClient from "../../util/redisClient";
+import { CONTRACT_MESSAGES, STRINGS } from "../../util/constants";
+import { AuthenticatedRequest, Contract } from "../../interfaces";
 import { StatusCodes } from "http-status-codes";
+import { ContractStatus, ContractType } from "../../enums";
+import { createContract, getContractsOfUser } from "../../controllers/contract";
+import * as helpers from "../../util/helpers";
 
-// Mocking dependencies
-jest.mock("../../../src/services/contractService");
-jest.mock("../../../src/util/redisClient", () => ({
+jest.mock("../../util/helpers");
+jest.mock("../../services/contractService");
+jest.mock("../../util/redisClient", () => ({
 	setEx: jest.fn(),
 	quit: jest.fn().mockResolvedValue(null),
 }));
 
 describe("Contract Controller", () => {
 	const userId = "1";
-	const contracts = [{ id: "1", name: "Contract 1" }];
+	const contracts: Contract[] = [
+		{
+			name: "Contract 1",
+			status: ContractStatus.SIGNED,
+			type: ContractType.MONTHLY,
+			perPayment: 0,
+			termLength: 0,
+			paymentAmount: 0,
+		},
+	];
 	const newContractResponse = "Contract created successfully";
 
-	let mockReq: Partial<Request>;
+	let mockReq: Partial<AuthenticatedRequest>;
 	let mockRes: Partial<Response>;
 	let mockNext: NextFunction;
 
@@ -39,15 +48,45 @@ describe("Contract Controller", () => {
 	});
 
 	describe("getContractsOfUser", () => {
-		it("should return contracts for a user and cache the result", async () => {
+		it("should return cached contracts if available", async () => {
+			mockReq.cachedData = contracts;
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`;
+			mockReq.query = { userId };
+
+			await getContractsOfUser(
+				mockReq as AuthenticatedRequest,
+				mockRes as Response,
+				mockNext
+			);
+
+			expect(contractService.getContractsOfUser).not.toHaveBeenCalled();
+			expect(contractService.getAllContracts).not.toHaveBeenCalled();
+			expect(redisClient.setEx).not.toHaveBeenCalled();
+			expect(helpers.sendResponse).toHaveBeenCalledWith(
+				mockRes,
+				StatusCodes.OK,
+				{
+					message: CONTRACT_MESSAGES.SUCCESS_FETCH,
+					contracts,
+				}
+			);
+		});
+
+		it("should return contracts for a user and cache the result if not cached", async () => {
 			(contractService.getContractsOfUser as jest.Mock).mockResolvedValue(
 				contracts
 			);
 			mockReq.query = { userId };
-			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`; // Setting originalUrl properly
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`;
+			mockReq.user = {
+				id: userId,
+				name: "john",
+				email: "john@gmail.com",
+				password: "john@123",
+			};
 
 			await getContractsOfUser(
-				mockReq as Request,
+				mockReq as AuthenticatedRequest,
 				mockRes as Response,
 				mockNext
 			);
@@ -56,15 +95,81 @@ describe("Contract Controller", () => {
 				userId
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/${STRINGS.CONTRACTS}?userId=${userId}`,
+				`/${STRINGS.CONTRACTS}?userId=${userId}${userId}`,
 				3600,
 				JSON.stringify(contracts)
 			);
-			expect(mockRes.status).toHaveBeenCalledWith(StatusCodes.OK);
-			expect(mockRes.json).toHaveBeenCalledWith({
-				message: CONTRACT_MESSAGES.SUCCESS_FETCH,
-				contracts,
-			});
+			expect(helpers.sendResponse).toHaveBeenCalledWith(
+				mockRes,
+				StatusCodes.OK,
+				{
+					message: CONTRACT_MESSAGES.SUCCESS_FETCH,
+					contracts,
+				}
+			);
+		});
+
+		it("should return all contracts and cache the result if no userId query and not cached", async () => {
+			(contractService.getAllContracts as jest.Mock).mockResolvedValue(
+				contracts
+			);
+			mockReq.query = {};
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`;
+			mockReq.user = {
+				id: userId,
+				name: "john",
+				email: "john@gmail.com",
+				password: "john@123",
+			};
+
+			await getContractsOfUser(
+				mockReq as AuthenticatedRequest,
+				mockRes as Response,
+				mockNext
+			);
+
+			expect(contractService.getAllContracts).toHaveBeenCalled();
+			expect(redisClient.setEx).toHaveBeenCalledWith(
+				`/${STRINGS.CONTRACTS}${userId}${STRINGS.CONTRACTS}`,
+				3600,
+				JSON.stringify(contracts)
+			);
+			expect(helpers.sendResponse).toHaveBeenCalledWith(
+				mockRes,
+				StatusCodes.OK,
+				{
+					message: CONTRACT_MESSAGES.SUCCESS_FETCH,
+					contracts,
+				}
+			);
+		});
+
+		it("should return contracts without caching if user is not authenticated", async () => {
+			(contractService.getContractsOfUser as jest.Mock).mockResolvedValue(
+				contracts
+			);
+			mockReq.query = { userId };
+			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`;
+			mockReq.user = undefined;
+
+			await getContractsOfUser(
+				mockReq as AuthenticatedRequest,
+				mockRes as Response,
+				mockNext
+			);
+
+			expect(contractService.getContractsOfUser).toHaveBeenCalledWith(
+				userId
+			);
+			expect(redisClient.setEx).not.toHaveBeenCalled();
+			expect(helpers.sendResponse).toHaveBeenCalledWith(
+				mockRes,
+				StatusCodes.OK,
+				{
+					message: CONTRACT_MESSAGES.SUCCESS_FETCH,
+					contracts,
+				}
+			);
 		});
 
 		it("should handle errors and call next with the error", async () => {
@@ -73,10 +178,9 @@ describe("Contract Controller", () => {
 				error
 			);
 			mockReq.query = { userId };
-			mockReq.originalUrl = `/${STRINGS.CONTRACTS}?userId=${userId}`; // Setting originalUrl properly
 
 			await getContractsOfUser(
-				mockReq as Request,
+				mockReq as AuthenticatedRequest,
 				mockRes as Response,
 				mockNext
 			);
@@ -86,12 +190,11 @@ describe("Contract Controller", () => {
 	});
 
 	describe("createContract", () => {
-		it("should create a contract and cache the success message", async () => {
+		it("should create a contract and return the success message", async () => {
 			(contractService.createContract as jest.Mock).mockResolvedValue(
 				newContractResponse
 			);
-			mockReq.body = { name: "Contract 1", userId };
-			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`; // Setting originalUrl properly
+			mockReq.body = { name: "Contract 1", totalReceived: 5000, userId };
 
 			await createContract(
 				mockReq as Request,
@@ -102,15 +205,13 @@ describe("Contract Controller", () => {
 			expect(contractService.createContract).toHaveBeenCalledWith(
 				mockReq.body
 			);
-			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/${STRINGS.CONTRACTS}`,
-				3600,
-				JSON.stringify(newContractResponse)
+			expect(helpers.sendResponse).toHaveBeenCalledWith(
+				mockRes,
+				StatusCodes.CREATED,
+				{
+					message: newContractResponse,
+				}
 			);
-			expect(mockRes.status).toHaveBeenCalledWith(StatusCodes.CREATED);
-			expect(mockRes.json).toHaveBeenCalledWith({
-				message: newContractResponse,
-			});
 		});
 
 		it("should handle errors and call next with the error", async () => {
@@ -118,8 +219,7 @@ describe("Contract Controller", () => {
 			(contractService.createContract as jest.Mock).mockRejectedValue(
 				error
 			);
-			mockReq.body = { name: "Contract 1", userId };
-			mockReq.originalUrl = `/${STRINGS.CONTRACTS}`; // Setting originalUrl properly
+			mockReq.body = { name: "Contract 1", totalReceived: 5000, userId };
 
 			await createContract(
 				mockReq as Request,

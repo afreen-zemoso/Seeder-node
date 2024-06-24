@@ -2,25 +2,38 @@ import { Request, Response, NextFunction } from "express";
 import * as contractService from "../services/contractService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
-import { CONTRACT_MESSAGES } from "../util/constants";
+import { CONTRACT_MESSAGES, STRINGS } from "../util/constants";
+import { AuthenticatedRequest, Contract } from "../interfaces";
+import { sendResponse } from "../util/helpers";
 
 export const getContractsOfUser = async (
-	req: Request,
+	req: AuthenticatedRequest,
 	res: Response,
 	next: NextFunction
 ) => {
 	try {
-		const contracts = await contractService.getContractsOfUser(
-			req.query.userId as string
-		);
+		let contracts: Contract[] = req.cachedData;
 
-		const key = req.originalUrl;
-		redisClient.setEx(key, 3600, JSON.stringify(contracts));
+		if(!contracts)
+		{
+			let key = req.originalUrl;
+			const userId = req.query.userId;
+			contracts = userId
+				? await contractService.getContractsOfUser(userId as string)
+				: await contractService.getAllContracts();
 
-		res.status(StatusCodes.OK).json({
+			if(req.user)
+			{
+				key += req.user.id;
+				key += userId ? '' : STRINGS.CONTRACTS;
+				redisClient.setEx(key, 3600, JSON.stringify(contracts));
+			}
+		}
+		sendResponse(res, StatusCodes.OK, {
 			message: CONTRACT_MESSAGES.SUCCESS_FETCH,
 			contracts,
 		});
+
 	} catch (error) {
 		next(error);
 	}
@@ -33,11 +46,7 @@ export const createContract = async (
 ) => {
 	try {
 		const successMsg = await contractService.createContract(req.body);
-
-        const key = req.originalUrl;
-		redisClient.setEx(key, 3600, JSON.stringify(successMsg));
-        
-		res.status(StatusCodes.CREATED).json({ message: successMsg });
+        sendResponse(res, StatusCodes.CREATED, { message: successMsg });
 	} catch (error) {
 		next(error);
 	}

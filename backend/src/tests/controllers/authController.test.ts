@@ -2,9 +2,13 @@ import { StatusCodes } from "http-status-codes";
 import * as authService from "../../services/authService";
 import redisClient from "../../util/redisClient";
 import { InvalidCredentialsError } from "../../errors/InvalidCredentialsError";
-import { postLogin } from "../../controllers/auth";
+import { postLogin, signUp } from "../../controllers/auth";
 import { STRINGS } from "../../util/constants";
+import * as helpers from "../../util/helpers";
+import { AuthenticatedRequest } from "../../interfaces";
+import { Request, Response, NextFunction } from "express";
 
+jest.mock("../../util/helpers");
 jest.mock("../../services/authService");
 jest.mock("../../util/redisClient", () => ({
 	setEx: jest.fn(),
@@ -28,7 +32,6 @@ describe("postLogin", () => {
 
 	afterEach(async () => {
 		jest.clearAllMocks();
-		await redisClient.quit();
 	});
 
 	it("should return 200 and token on successful login", async () => {
@@ -39,13 +42,11 @@ describe("postLogin", () => {
 		await postLogin(req, res, next);
 
 		expect(authService.userLogin).toHaveBeenCalledWith(req.body);
-		expect(redisClient.setEx).toHaveBeenCalledWith(
-			req.originalUrl,
-			3600,
-			JSON.stringify(token)
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			res,
+			StatusCodes.OK,
+			{ token }
 		);
-		expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
-		expect(res.json).toHaveBeenCalledWith({ token });
 		expect(next).not.toHaveBeenCalled();
 	});
 
@@ -59,9 +60,7 @@ describe("postLogin", () => {
 		expect(next).toHaveBeenCalledWith(
 			new InvalidCredentialsError(result.message)
 		);
-		expect(redisClient.setEx).not.toHaveBeenCalled();
-		expect(res.status).not.toHaveBeenCalled();
-		expect(res.json).not.toHaveBeenCalled();
+		expect(helpers.sendResponse).not.toHaveBeenCalled();
 	});
 
 	it("should call next with error on exception", async () => {
@@ -72,8 +71,65 @@ describe("postLogin", () => {
 
 		expect(authService.userLogin).toHaveBeenCalledWith(req.body);
 		expect(next).toHaveBeenCalledWith(error);
-		expect(redisClient.setEx).not.toHaveBeenCalled();
-		expect(res.status).not.toHaveBeenCalled();
-		expect(res.json).not.toHaveBeenCalled();
+		expect(helpers.sendResponse).not.toHaveBeenCalled();
+
+	});
+});
+
+describe("signUp", () => {
+	const newUserResponse = "User created successfully";
+
+	let mockReq: Partial<AuthenticatedRequest>;
+	let mockRes: Partial<Response>;
+	let mockNext: NextFunction;
+
+	beforeEach(() => {
+		mockReq = {};
+		mockRes = {
+			status: jest.fn().mockReturnThis(),
+			json: jest.fn(),
+		};
+		mockNext = jest.fn();
+	});
+
+	afterEach(async () => {
+		jest.clearAllMocks();
+		await redisClient.quit();
+	});
+
+	it("should create a user and return the success message", async () => {
+		(authService.userSignUp as jest.Mock).mockResolvedValue(
+			newUserResponse
+		);
+		mockReq.body = {
+			name: "John Doe",
+			email: "john@gmail.com",
+			password: "password123",
+		};
+
+		await signUp(mockReq as Request, mockRes as Response, mockNext);
+
+		expect(authService.userSignUp).toHaveBeenCalledWith(mockReq.body);
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			mockRes,
+			StatusCodes.CREATED,
+			{
+				message: newUserResponse,
+			}
+		);
+	});
+
+	it("should handle errors and call next with the error", async () => {
+		const error = new Error("Creation failed");
+		(authService.userSignUp as jest.Mock).mockRejectedValue(error);
+		mockReq.body = {
+			name: "John Doe",
+			email: "john@gmail.com",
+			password: "password123",
+		};
+
+		await signUp(mockReq as Request, mockRes as Response, mockNext);
+
+		expect(mockNext).toHaveBeenCalledWith(error);
 	});
 });

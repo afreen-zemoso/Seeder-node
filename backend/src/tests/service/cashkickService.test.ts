@@ -12,7 +12,6 @@ import { CashkicksStatus } from "../../enums";
 jest.mock("../../models/cashkick");
 jest.mock("../../models/cashkick_contract");
 jest.mock("../../models/user");
-jest.mock("../../util/constants");
 
 describe("Cashkick Service", () => {
 	let user = {
@@ -21,17 +20,19 @@ describe("Cashkick Service", () => {
 		email: "john@example.com",
 		rate: 12,
 		creditBalance: 10000,
-        termCap: 12
+		termCap: 12,
 	};
 
-	let cashkick = {dataValues: {
-		id: "1",
-		name: "Cashkick 1",
-		status: "pending",
-		maturity: new Date(),
-		totalReceived: 5000,
-		userId: user.id,
-	}};
+	let cashkick = {
+		dataValues: {
+			id: "1",
+			name: "Cashkick 1",
+			status: CashkicksStatus.PENDING,
+			maturity: new Date(),
+			totalReceived: 5000,
+			userId: user.id,
+		},
+	};
 
 	afterEach(() => {
 		jest.clearAllMocks();
@@ -49,12 +50,13 @@ describe("Cashkick Service", () => {
 			});
 
 			expect(User.findByPk).toHaveBeenCalledWith(user.id);
-            const userCashkick = cashkick.dataValues;
-            const { totalReceived } = userCashkick;
+			const userCashkick = cashkick.dataValues;
+			const { totalReceived } = userCashkick;
 			expect(result).toEqual([
 				{
 					...userCashkick,
-					totalFinanced: totalReceived + totalReceived * (user.rate/100)
+					totalFinanced:
+						totalReceived + totalReceived * (user.rate / 100),
 				},
 			]);
 		});
@@ -66,15 +68,14 @@ describe("Cashkick Service", () => {
 			await expect(getUserCashkicks(user.id)).rejects.toThrow(
 				USER_MESSAGES.ERROR_FETCH
 			);
-			expect(Cashkick.findAll).toHaveBeenCalledWith({
-				where: { userId: user.id },
-			});
+
 			expect(User.findByPk).toHaveBeenCalledWith(user.id);
 		});
 
 		it("should throw an error when fetching cashkicks fails", async () => {
+			(User.findByPk as jest.Mock).mockResolvedValue(user);
 			(Cashkick.findAll as jest.Mock).mockRejectedValue(
-				new Error("Fetch failed")
+				new Error(CASHKICK_MESSAGES.ERROR_FETCH)
 			);
 
 			await expect(getUserCashkicks(user.id)).rejects.toThrow(
@@ -125,24 +126,17 @@ describe("Cashkick Service", () => {
 		});
 
 		it("should throw an error when user is not found", async () => {
-			(Cashkick.create as jest.Mock).mockResolvedValue(cashkick);
 			(User.findByPk as jest.Mock).mockResolvedValue(null);
 
 			await expect(createCashkick(cashkickBody)).rejects.toThrow(
 				USER_MESSAGES.ERROR_FETCH
 			);
-			expect(Cashkick.create).toHaveBeenCalledWith({
-				name: cashkickBody.name,
-				status: cashkickBody.status,
-				maturity: cashkickBody.maturity,
-				userId: cashkickBody.userId,
-				totalReceived: cashkickBody.totalReceived,
-			});
 		});
 
 		it("should throw an error when cashkick creation fails", async () => {
+			(User.findByPk as jest.Mock).mockResolvedValue(user);
 			(Cashkick.create as jest.Mock).mockRejectedValue(
-				new Error("Creation failed")
+				new Error(CASHKICK_MESSAGES.ERROR_ADD)
 			);
 
 			await expect(createCashkick(cashkickBody)).rejects.toThrow(

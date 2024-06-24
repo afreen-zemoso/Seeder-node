@@ -1,5 +1,4 @@
 import {
-	createUser,
 	getUserByEmail,
 	updateUser,
 	getUsers,
@@ -11,7 +10,7 @@ import { NotFoundError } from "../../errors/NotFoundError";
 jest.mock("../../models/user");
 jest.mock("../../util/constants");
 
-import { User as UserBody, UserUpdateBody } from "../../interfaces/index";
+import { UserDetails as UserBody, UserUpdateBody } from "../../interfaces/index";
 
 describe("User Service", () => {
 	let user: UserBody = {
@@ -24,59 +23,33 @@ describe("User Service", () => {
 		jest.clearAllMocks();
 	});
 
-	describe("createUser", () => {
-		it("should create a user and return success message", async () => {
-			(User.create as jest.Mock).mockResolvedValue({});
-			const result = await createUser(user);
-
-			expect(User.create).toHaveBeenCalledWith({
-				...user,
-				creditBalance: 10000,
-				rate: 12,
-				termCap: 12,
-			});
-			expect(result).toEqual(USER_MESSAGES.SUCCESS_ADD);
-		});
-
-		it("should throw an error when user creation fails", async () => {
-			(User.create as jest.Mock).mockRejectedValue(
-				new Error("Creation failed")
-			);
-
-			await expect(createUser(user)).rejects.toThrow(
-				USER_MESSAGES.ERROR_ADD
-			);
-			expect(User.create).toHaveBeenCalledWith({
-				...user,
-				creditBalance: 10000,
-				rate: 12,
-				termCap: 12,
-			});
-		});
-	});
-
 	describe("getUserByEmail", () => {
-		const userEmail = user.email;
-		it("should return a user when found", async () => {
-			(User.findOne as jest.Mock).mockResolvedValue(user);
+		it("should return the user when found", async () => {
+			const responseUser = {
+				name: "John Doe",
+				email: "john@example.com",
+			};
+			(User.findOne as jest.Mock).mockResolvedValue(responseUser);
 
-			const result = await getUserByEmail(userEmail);
-			expect(result).toEqual(user);
+			const result = await getUserByEmail("john@example.com");
+
 			expect(User.findOne).toHaveBeenCalledWith({
-				where: { email: userEmail },
+				where: { email: "john@example.com" },
+				attributes: { exclude: ["password"] },
 			});
+			expect(result).toEqual(responseUser);
 		});
 
-		it("should throw an error when user not found", async () => {
-			(User.findOne as jest.Mock).mockRejectedValue(
-				new NotFoundError(USER_MESSAGES.ERROR_FETCH)
-			);
+		it("should throw a NotFoundError when an error occurs", async () => {
+			const error = new Error("Database error");
+			(User.findOne as jest.Mock).mockRejectedValue(error);
 
-			await expect(getUserByEmail(userEmail)).rejects.toThrow(
-				USER_MESSAGES.ERROR_FETCH
+			await expect(getUserByEmail("john@example.com")).rejects.toThrow(
+				NotFoundError
 			);
 			expect(User.findOne).toHaveBeenCalledWith({
-				where: { email: userEmail },
+				where: { email: "john@example.com" },
+				attributes: { exclude: ["password"] },
 			});
 		});
 	});
@@ -97,7 +70,7 @@ describe("User Service", () => {
 
 		it("should throw an error when user update fails", async () => {
 			(User.update as jest.Mock).mockRejectedValue(
-				new Error("Update failed")
+				new Error(USER_MESSAGES.ERROR_UPDATE)
 			);
 
 			await expect(updateUser("1", updateBody)).rejects.toThrow(
@@ -121,7 +94,7 @@ describe("User Service", () => {
 
 		it("should throw an error when fetching users fails", async () => {
 			(User.findAll as jest.Mock).mockRejectedValue(
-				new Error("Fetch failed")
+				new Error(USER_MESSAGES.ERROR_FETCH+'s')
 			);
 
 			await expect(getUsers()).rejects.toThrow(USER_MESSAGES.ERROR_FETCH);

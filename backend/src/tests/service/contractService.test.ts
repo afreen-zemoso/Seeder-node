@@ -1,13 +1,14 @@
 import {
 	getContractsOfUser,
 	createContract,
+	getAllContracts,
 } from "../../services/contractService";
 import Cashkick from "../../models/cashkick";
 import Cashkick_Contract from "../../models/cashkick_contract";
 import Contract from "../../models/contract";
 import { CONTRACT_MESSAGES, STRINGS } from "../../util/constants";
 import { Contract as ContractBody, UserContract } from "../../interfaces/index";
-import { contractStatus, contractType } from "../../enums";
+import { ContractStatus, ContractType } from "../../enums";
 
 jest.mock("../../models/cashkick");
 jest.mock("../../models/cashkick_contract");
@@ -85,7 +86,7 @@ describe("Contract Service", () => {
 
 		it("should throw an error when fetching contracts fails", async () => {
 			(Cashkick.findAll as jest.Mock).mockRejectedValue(
-				new Error("Fetch failed")
+				new Error(CONTRACT_MESSAGES.ERROR_FETCH)
 			);
 
 			await expect(getContractsOfUser(userId)).rejects.toThrow(
@@ -104,20 +105,41 @@ describe("Contract Service", () => {
 		});
 	});
 
+	describe("getAllContracts", () => {
+		it("should return all contracts", async () => {
+			const expectedContracts = [{ id: "1", name: "Contract 1" }];
+			(Contract.findAll as jest.Mock).mockResolvedValue(expectedContracts);
+
+			const result = await getAllContracts();
+
+			expect(result).toEqual(expectedContracts);
+		});
+
+		it("should throw an error if an error occurs", async () => {
+			(Contract.findAll as jest.Mock).mockRejectedValue(
+				new Error("Database error")
+			);
+
+			await expect(getAllContracts()).rejects.toThrow(
+				CONTRACT_MESSAGES.ERROR_FETCH
+			);
+		});
+	});
+
 	describe("createContract", () => {
 		const contracts: ContractBody[] = [
 			{
 				name: "Contract 1",
-				status: contractStatus.SIGNED,
-				type: contractType.MONTHLY,
+				status: ContractStatus.SIGNED,
+				type: ContractType.MONTHLY,
 				perPayment: 1000,
 				termLength: 5,
 				paymentAmount: 2000,
 			},
 			{
 				name: "Contract 2",
-				status: contractStatus.SIGNED,
-				type: contractType.MONTHLY,
+				status: ContractStatus.SIGNED,
+				type: ContractType.MONTHLY,
 				perPayment: 1200,
 				termLength: 7,
 				paymentAmount: 2100,
@@ -137,7 +159,7 @@ describe("Contract Service", () => {
 
 		it("should throw an error when contract creation fails", async () => {
 			(Contract.create as jest.Mock).mockRejectedValue(
-				new Error("Creation failed")
+				new Error(CONTRACT_MESSAGES.ERROR_ADD)
 			);
 
 			await expect(createContract(contracts)).rejects.toThrow(

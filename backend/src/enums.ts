@@ -1,10 +1,10 @@
-export enum contractType {
+export enum ContractType {
 	MONTHLY = "MONTHLY",
 	QUERTERLY = "QUERTERLY",
 	YEARLY = "YEARLY",
 }
 
-export enum contractStatus {
+export enum ContractStatus {
 	SIGNED = "SIGNED",
 	AVAILABLE = "AVAILABLE",
 }

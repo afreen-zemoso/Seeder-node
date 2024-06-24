@@ -1,7 +1,11 @@
 import authenticate from "../../middleware/authMiddleware";
 import User from "../../models/user";
-import { SECRET_KEY } from "../../util/constants";
+import { AUTH_MESSAGES, SECRET_KEY } from "../../util/constants";
 import jwt from "jsonwebtoken";
+import { StatusCodes } from "http-status-codes";
+import * as helpers from "../../util/helpers"; 
+
+jest.mock("../../util/helpers");
 
 jest.mock("jsonwebtoken", () => ({
 	...jest.requireActual("jsonwebtoken"), 
@@ -36,19 +40,26 @@ describe("authenticate middleware", () => {
 
 		await authenticate(req, res, next);
 
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({
-			error: "Access denied, no token provided",
-		});
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			res,
+			StatusCodes.UNAUTHORIZED,
+			{
+				error: AUTH_MESSAGES.ACCESS_DENIED,
+			}
+		);
 		expect(next).not.toHaveBeenCalled();
 	});
 
 	test("Should respond with 401 for invalid token format", async () => {
 
 		await authenticate(req, res, next);
-
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Invalid token" });
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			res,
+			StatusCodes.UNAUTHORIZED,
+			{
+				error: AUTH_MESSAGES.INVALID_TOKEN,
+			}
+		);
 		expect(next).not.toHaveBeenCalled();
 	});
 
@@ -61,8 +72,13 @@ describe("authenticate middleware", () => {
 
 		await authenticate(req, res, next);
 
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Invalid token" });
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			res,
+			StatusCodes.UNAUTHORIZED,
+			{
+				error: AUTH_MESSAGES.INVALID_TOKEN,
+			}
+		);
 		expect(next).not.toHaveBeenCalled();
 	});
 
@@ -73,8 +89,13 @@ describe("authenticate middleware", () => {
 
 		await authenticate(req, res, next);
 
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Invalid token" });
+		expect(helpers.sendResponse).toHaveBeenCalledWith(
+			res,
+			StatusCodes.UNAUTHORIZED,
+			{
+				error: AUTH_MESSAGES.INVALID_TOKEN,
+			}
+		);
 		expect(next).not.toHaveBeenCalled();
 	});
     

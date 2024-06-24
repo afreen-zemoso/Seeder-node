@@ -95,6 +95,7 @@ export const VALIDATION_MESSAGES = {
 	ERROR_PAYMENT_AMOUNT_NUMBER: "Payment amount must be a number.",
 };
 
+// Strings used across the application
 export const STRINGS = {
 	CASHKICKS: "cashkicks",
 	CONTRACTS: "contracts",
@@ -111,4 +112,6 @@ export const STRINGS = {
 	EMAIL: "email",
 	PASSWORD: "password",
 	ID: "id",
+	AUTHENTICATION: "Authorization",
+	BEARER: "Bearer ",
 };

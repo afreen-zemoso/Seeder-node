@@ -3,21 +3,32 @@ import * as cashkickService from "../services/cashkickService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
 import { CASHKICK_MESSAGES } from "../util/constants";
+import { AuthenticatedRequest, UserCashkick } from "../interfaces";
+import { sendResponse } from "../util/helpers";
 
 export const getUserCashkicks = async (
-	req: Request,
+	req: AuthenticatedRequest,
 	res: Response,
 	next: NextFunction
 ) => {
 	try {
-		const cashkicks = await cashkickService.getUserCashkicks(
-			req.params.userId
-		);
+		let cashkicks: UserCashkick[] = req.cachedData;
 
-		const key = req.originalUrl;
-		redisClient.setEx(key, 3600, JSON.stringify(cashkicks));
+		if (!cashkicks) {
+			cashkicks = await cashkickService.getUserCashkicks(
+				req.params.userId
+			);
 
-		res.status(StatusCodes.OK).json({ message: CASHKICK_MESSAGES.SUCCESS_FETCH, cashkicks });
+			if (req.user) {
+				const key = req.originalUrl + req.user.id;
+				redisClient.setEx(key, 3600, JSON.stringify(cashkicks));
+			}
+		}
+        sendResponse(res, StatusCodes.OK, {
+			message: CASHKICK_MESSAGES.SUCCESS_FETCH,
+			cashkicks,
+		});
+
 	} catch (error) {
 		next(error);
 	}
@@ -30,11 +41,7 @@ export const createCashkick = async (
 ) => {
 	try {
 		const successMsg = await cashkickService.createCashkick(req.body);
-		
-		const key = req.originalUrl;
-		redisClient.setEx(key, 3600, JSON.stringify(successMsg));
-
-		res.status(StatusCodes.CREATED).json({ message: successMsg });
+		sendResponse(res, StatusCodes.CREATED, { message: successMsg });
 	} catch (error) {
 		next(error);
 	}

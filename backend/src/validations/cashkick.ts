@@ -8,7 +8,7 @@ export const createCashkickRequestValidation = [
 		.isLength({ min: 1 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_NAME_REQUIRED),
 
-	body(STRINGS.MATURITY)
+	body(STRINGS.STATUS)
 		.notEmpty()
 		.withMessage(VALIDATION_MESSAGES.ERROR_STATUS_REQUIRED)
 		.isIn(Object.values(CashkicksStatus))

@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
-import { AUTH_MESSAGES, SECRET_KEY, USER_MESSAGES } from "../util/constants";
+import { AUTH_MESSAGES, SECRET_KEY, STRINGS, USER_MESSAGES } from "../util/constants";
+import { sendResponse } from '../util/helpers';
 
 const authenticate = async (req: any, res: any, next: any) => {
-	const token = req.header("Authorization")?.replace("Bearer ", "");
+	const token = req.header(STRINGS.AUTHENTICATION)?.replace(STRINGS.BEARER, "");
 	if (!token) {
-		return res.status(401).json({ error: AUTH_MESSAGES.ACCESS_DENIED });
+        return sendResponse(res, 401, { error: AUTH_MESSAGES.ACCESS_DENIED });
 	}
 	try {
 		const decoded = jwt.verify(token, SECRET_KEY) as jwt.JwtPayload;
@@ -16,7 +17,7 @@ const authenticate = async (req: any, res: any, next: any) => {
 		req.user = user;
 		next();
 	} catch (error) {
-		res.status(401).json({ error: AUTH_MESSAGES.INVALID_TOKEN });
+        sendResponse(res, 401, { error: AUTH_MESSAGES.INVALID_TOKEN });
 	}
 };
 export default authenticate;

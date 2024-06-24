@@ -23,6 +23,8 @@ const config: Config.InitialOptions = {
 		"!src/app.ts",
 		"!src/routes/*",
 		"!src/util/*",
+		"!src/tests/setup.ts",
+		"!src/models/*",
 	],
 	coverageDirectory: "coverage",
 	coverageReporters: ["text", "lcov", "html"],

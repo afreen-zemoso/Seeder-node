@@ -3,17 +3,11 @@ import * as userController from "../controllers/user";
 import authenticate from "../middleware/authMiddleware";
 import { createUserRequestValidation, updateUserRequestValidation } from "../validations/user";
 import { handleValidationErrors } from "../middleware/validationMiddleware";
+import cacheMiddleware from "../middleware/cacheMiddleware";
 
 const router = Router();
 
-router.get("/", authenticate, userController.getUserByEmail);
-
-router.post(
-	"/",
-	createUserRequestValidation,
-	handleValidationErrors,
-	userController.createUser
-);
+router.get("/", authenticate, cacheMiddleware, userController.getUserByEmail);
 
 router.patch(
 	"/:id",
@@ -22,7 +16,5 @@ router.patch(
 	handleValidationErrors,
 	userController.updateUser
 );
-
-router.get("/all", authenticate, userController.getUsers);
 
 export default router;

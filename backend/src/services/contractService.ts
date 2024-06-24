@@ -50,6 +50,16 @@ export const getContractsOfUser = async (userId: string) => {
 	}
 };
 
+export const getAllContracts = async () => {
+	try {
+		const contracts = await Contract.findAll();
+		return contracts;
+	} catch (error) {
+		console.error(error);
+		throw new Error(CONTRACT_MESSAGES.ERROR_FETCH);
+	}
+};
+
 export const createContract = async (contracts: ContractBody[]) => {
 	try {
 		await Promise.all(

@@ -1,5 +1,5 @@
 import { body, query } from "express-validator";
-import { contractType, contractStatus } from "../enums";
+import { ContractType, ContractStatus } from "../enums";
 import { STRINGS, VALIDATION_MESSAGES } from "../util/constants";
 
 const validateContractsArray = () => {
@@ -20,13 +20,13 @@ const validateContractsArray = () => {
 		body(`*.${STRINGS.TYPE}`)
 			.notEmpty()
 			.withMessage(VALIDATION_MESSAGES.ERROR_TYPE_REQUIRED)
-			.isIn(Object.values(contractType))
+			.isIn(Object.values(ContractType))
 			.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_TYPE),
 
 		body(`*.${STRINGS.STATUS}`)
 			.notEmpty()
 			.withMessage(VALIDATION_MESSAGES.ERROR_STATUS_REQUIRED)
-			.isIn(Object.values(contractStatus))
+			.isIn(Object.values(ContractStatus))
 			.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_STATUS),
 
 		body(`*.${STRINGS.PER_PAYMENT}`)

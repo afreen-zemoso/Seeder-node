@@ -1,8 +1,9 @@
-import { CashkicksStatus, contractStatus, contractType } from "../enums";
-
+import { CashkicksStatus, ContractStatus, ContractType } from "../enums";
+import { Request } from "express";
 export interface RequestParams { courseId: string };
 
-export interface User {
+export interface UserDetails {
+	id?: string;
 	name: string;
 	email: string;
 	password: string;
@@ -29,8 +30,8 @@ export interface UserCashkick {
 
 export interface UserContract {
 	name: string;
-	status: contractStatus;
-	type: contractType;
+	status: ContractStatus;
+	type: ContractType;
 	perPayment: number;
 	termLength: number;
 	paymentAmount: number;
@@ -39,12 +40,22 @@ export interface UserContract {
 
 export interface Contract {
 	name: string;
-	status: contractStatus;
-	type: contractType;
+	status: ContractStatus;
+	type: ContractType;
 	perPayment: number;
 	termLength: number;
 	paymentAmount: number;
 };
+
+export interface UserQuery {
+	userId?: string;
+	email?: string;
+}
+
+export interface AuthenticatedRequest extends Request<any, {}, {}, UserQuery> {
+	user?: UserDetails;
+	cachedData?: any;
+}
 
 export interface LoginRequestBody {
 	email: string;

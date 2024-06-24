@@ -1,23 +1,30 @@
-import { Request, Response, NextFunction } from "express";
+import {  Response, NextFunction } from "express";
 import redisClient from "../util/redisClient";
+import { AuthenticatedRequest } from "../interfaces";
+import { STRINGS } from "../util/constants";
 
 const cacheMiddleware = async (
-	req: Request,
+	req: AuthenticatedRequest,
 	res: Response,
 	next: NextFunction
 ) => {
-	const key = req.originalUrl;
+	if (!req.user) {
+		return next();
+	}
+	let key = req.originalUrl + req.user.id;
+
+	if(!req.query.userId)
+		key += STRINGS.CONTRACTS;
 
 	try {
 		const data = await redisClient.get(key);
 		if (data) {
-			res.status(200).json(JSON.parse(data));
-		} else {
-			next();
+			req.cachedData = JSON.parse(data);
 		}
 	} catch (err) {
-		next(err); 
-	}
+		console.error("Error retrieving data from cache:", err);	}
+
+	next();
 };
 
 export default cacheMiddleware;

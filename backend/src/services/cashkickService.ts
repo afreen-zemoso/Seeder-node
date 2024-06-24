@@ -6,11 +6,11 @@ import { CASHKICK_MESSAGES, USER_MESSAGES } from "../util/constants";
 
 export const getUserCashkicks = async (userId: string) => {
 	try {
-		const cashkicks = await Cashkick.findAll({ where: { userId } });
 		const user = await User.findByPk(userId);
-		if(!user)
-			throw new Error(USER_MESSAGES.ERROR_FETCH);
+		if (!user) throw new Error(USER_MESSAGES.ERROR_FETCH);
 
+		const cashkicks = await Cashkick.findAll({ where: { userId } });
+	
 		const userCashkicks: UserCashkick[] = [];
 		cashkicks.map((cashkick: Cashkick) => {
 			const userCashkick = cashkick.dataValues;
@@ -33,6 +33,10 @@ export const getUserCashkicks = async (userId: string) => {
 export const createCashkick = async (body: CashkickBody) => {
 	try {
 		const {name , status, maturity, totalReceived, userId, contracts } = body;
+
+		const user = await User.findByPk(userId);
+		if (!user) throw new Error(USER_MESSAGES.ERROR_FETCH);
+
 		const newCashkick = await Cashkick.create({
 			name,
 			status,
@@ -40,9 +44,6 @@ export const createCashkick = async (body: CashkickBody) => {
 			userId,
 			totalReceived,
 		});
-		const user = await User.findByPk(userId);
-		if(!user)
-			throw new Error(USER_MESSAGES.ERROR_FETCH);
 
 		if (contracts && contracts.length > 0 && user) {
 			const totalFinanced = totalReceived * (user.rate/100);
