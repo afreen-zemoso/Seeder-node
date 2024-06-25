@@ -15,6 +15,7 @@ export const AUTH_MESSAGES = {
 	PASSWORD_INCORRECT: "Password is Incorrect",
 	ACCESS_DENIED: "Access denied, no token provided",
 	INVALID_TOKEN: "Invalid token",
+	NOT_AUTHENTICATED: "Not Authenticated"
 };
 export const CASHKICK_MESSAGES = {
 	SUCCESS_FETCH: "Successfully fetched cashkicks",
@@ -115,3 +116,9 @@ export const STRINGS = {
 	AUTHENTICATION: "Authorization",
 	BEARER: "Bearer ",
 };
+
+export const ROUTES = {
+	LOGIN: "/login",
+	SIGNUP: "/signup",
+	USER: "/user"
+}

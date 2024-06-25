@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import * as userService from "../services/userService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
-import { USER_MESSAGES } from "../util/constants";
+import { AUTH_MESSAGES, USER_MESSAGES } from "../util/constants";
 import { AuthenticatedRequest } from "../interfaces";
-import { sendResponse } from "../util/helpers";
+import { clearCache, getLoggedInUserId, sendResponse } from "../util/helpers";
 
 export const getUserByEmail = async (
 	req: AuthenticatedRequest,
@@ -19,12 +19,13 @@ export const getUserByEmail = async (
 		let user = req.cachedData;
 		if(!user)
 		{
+			const userId = getLoggedInUserId(req);
 			user = await userService.getUserByEmail(emailId);
-			if(req.user)
-			{
-				const key = req.originalUrl + req.user.id;
-				redisClient.setEx(key, 3600, JSON.stringify(user));
-			}
+
+			if (!userId) throw new Error(AUTH_MESSAGES.NOT_AUTHENTICATED);
+			
+			const key = req.originalUrl + userId;
+			redisClient.setEx(key, 3600, JSON.stringify(user));
 		}
         sendResponse(res, StatusCodes.OK, user);
 		
@@ -39,8 +40,12 @@ export const updateUser = async (
 	next: NextFunction
 ) => {
 	try {
-		const userId = req.params.id;
+		const userId = getLoggedInUserId(req);
+
+		if (!userId) throw new Error(AUTH_MESSAGES.NOT_AUTHENTICATED);
+
 		const successMsg = await userService.updateUser(userId, req.body);
+		clearCache();
         sendResponse(res, StatusCodes.OK, successMsg);
 
 	} catch (error) {

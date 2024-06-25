@@ -25,11 +25,6 @@ export const createCashkickRequestValidation = [
 		.isFloat({ min: 0 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_INVALID_AMOUNT),
 
-	body(STRINGS.USER_ID)
-		.trim()
-		.isUUID()
-		.withMessage(VALIDATION_MESSAGES.ERROR_USER_ID_REQUIRED),
-
 	body(STRINGS.CONTRACTS)
 		.isArray({ min: 1 })
 		.withMessage(VALIDATION_MESSAGES.ERROR_CONTRACT_ID_REQUIRED)

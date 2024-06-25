@@ -7,7 +7,7 @@ export const getUserByEmail = async (email: string) => {
 	try {
 		const user = await User.findOne({
 			where: { email },
-			attributes: { exclude: ["password"] },
+			attributes: { exclude: ["password"] }, 
 		});
 		return user;
 	} catch (error) {

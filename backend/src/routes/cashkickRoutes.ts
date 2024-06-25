@@ -7,7 +7,7 @@ import cacheMiddleware from "../middleware/cacheMiddleware";
 
 const router = Router();
 
-router.get("/:userId", authenticate, cacheMiddleware, cashkickController.getUserCashkicks);
+router.get("/", authenticate, cacheMiddleware, cashkickController.getUserCashkicks);
 
 router.post(
 	"/",

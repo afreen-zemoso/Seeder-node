@@ -1,36 +1,34 @@
 import { Request, Response, NextFunction } from "express";
-
 import * as userService from "../../services/userService";
 import redisClient from "../../util/redisClient";
-import { USER_MESSAGES } from "../../util/constants";
-import { StatusCodes } from "http-status-codes";
+import { AUTH_MESSAGES, USER_MESSAGES } from "../../util/constants";
 import { AuthenticatedRequest } from "../../interfaces";
+import { clearCache, getLoggedInUserId, sendResponse } from "../../util/helpers";
 import { getUserByEmail, updateUser } from "../../controllers/user";
-import * as helpers from "../../util/helpers";
 
-jest.mock("../../util/helpers");
 jest.mock("../../services/userService");
+jest.mock("../../util/helpers");
 jest.mock("../../util/redisClient", () => ({
 	setEx: jest.fn(),
 	quit: jest.fn().mockResolvedValue(null),
 }));
 
 describe("User Controller", () => {
-	const userId = "1";
-	const user = { id: "1", name: "John Doe", email: "john@gmail.com" };
-	const updatedUserResponse = "User updated successfully";
-
-	let mockReq: Partial<AuthenticatedRequest>;
-	let mockRes: Partial<Response>;
-	let mockNext: NextFunction;
+	let req: Partial<AuthenticatedRequest>;
+	let res: Partial<Response>;
+	let next: NextFunction;
 
 	beforeEach(() => {
-		mockReq = {};
-		mockRes = {
+		req = {
+			query: {},
+			cachedData: undefined,
+			originalUrl: "/user",
+		};
+		res = {
 			status: jest.fn().mockReturnThis(),
 			json: jest.fn(),
 		};
-		mockNext = jest.fn();
+		next = jest.fn();
 	});
 
 	afterEach(async () => {
@@ -39,121 +37,118 @@ describe("User Controller", () => {
 	});
 
 	describe("getUserByEmail", () => {
-		it("should return cached user if available", async () => {
-			mockReq.cachedData = user;
-			mockReq.query = { email: user.email };
-			mockReq.originalUrl = `/users?email=${user.email}`;
-			mockReq.user = {
-				id: userId,
-				name: "john",
-				email: "john@gmail.com",
-				password: "john@123",
-			};
+		it("should return 400 if email is not provided", async () => {
+			req.query = {};
 
 			await getUserByEmail(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
-			expect(userService.getUserByEmail).not.toHaveBeenCalled();
-			expect(redisClient.setEx).not.toHaveBeenCalled();
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				user
+			expect(next).toHaveBeenCalledWith(
+				new Error(USER_MESSAGES.REQUIRED_EMAIL)
 			);
+			expect(sendResponse).not.toHaveBeenCalled();
 		});
 
-		it("should return user and cache the result if not cached", async () => {
-			(userService.getUserByEmail as jest.Mock).mockResolvedValue(user);
-			mockReq.query = { email: user.email };
-			mockReq.originalUrl = `/users?email=${user.email}`;
-			mockReq.user = {
-				id: userId,
-				name: "john",
-				email: "john@gmail.com",
-				password: "john@123",
-			};
+		it("should return user from cache if available", async () => {
+			req.query = { email: "test@example.com" };
+			req.cachedData = { id: 1, email: "test@example.com" };
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 
 			await getUserByEmail(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
-			expect(userService.getUserByEmail).toHaveBeenCalledWith(user.email);
+			expect(redisClient.setEx).not.toHaveBeenCalled();
+			expect(sendResponse).toHaveBeenCalledWith(res, 200, req.cachedData);
+		});
+
+		it("should fetch user from service if not cached", async () => {
+			const user = { id: 1, email: "test@example.com" };
+			req.query = { email: "test@example.com" };
+			req.cachedData = undefined;
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
+			(userService.getUserByEmail as jest.Mock).mockResolvedValue(user);
+
+			await getUserByEmail(
+				req as AuthenticatedRequest,
+				res as Response,
+				next
+			);
+
+			expect(userService.getUserByEmail).toHaveBeenCalledWith(
+				"test@example.com"
+			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/users?email=${user.email}${userId}`,
+				req.originalUrl + "123",
 				3600,
 				JSON.stringify(user)
 			);
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				user
-			);
+			expect(sendResponse).toHaveBeenCalledWith(res, 200, user);
 		});
 
-		it("should throw an error if email is not provided", async () => {
-			mockReq.query = {};
+		it("should return 401 if user is not authenticated", async () => {
+			req.query = { email: "test@example.com" };
+			(getLoggedInUserId as jest.Mock).mockReturnValue(null);
 
 			await getUserByEmail(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
-			expect(mockNext).toHaveBeenCalledWith(
-				new Error(USER_MESSAGES.REQUIRED_EMAIL)
+			expect(next).toHaveBeenCalledWith(
+				new Error(AUTH_MESSAGES.NOT_AUTHENTICATED)
 			);
-		});
-
-		it("should handle errors and call next with the error", async () => {
-			const error = new Error("Fetch failed");
-			(userService.getUserByEmail as jest.Mock).mockRejectedValue(error);
-			mockReq.query = { email: user.email };
-
-			await getUserByEmail(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
-			);
-
-			expect(mockNext).toHaveBeenCalledWith(error);
+			expect(sendResponse).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("updateUser", () => {
-		it("should update a user and return the success message", async () => {
-			(userService.updateUser as jest.Mock).mockResolvedValue(
-				updatedUserResponse
-			);
-			mockReq.params = { id: userId };
-			mockReq.body = { name: "John Updated" };
+		it("should update the user and clear cache", async () => {
+			const successMsg = USER_MESSAGES.SUCCESS_UPDATE;
+			req.body = { name: "Updated User" };
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
+			(userService.updateUser as jest.Mock).mockResolvedValue(successMsg);
 
-			await updateUser(mockReq as Request, mockRes as Response, mockNext);
+			await updateUser(req as Request, res as Response, next);
 
 			expect(userService.updateUser).toHaveBeenCalledWith(
-				userId,
-				mockReq.body
+				"123",
+				req.body
 			);
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				updatedUserResponse
-			);
+			expect(clearCache).toHaveBeenCalled();
+			expect(sendResponse).toHaveBeenCalledWith(res, 200, successMsg);
 		});
 
-		it("should handle errors and call next with the error", async () => {
-			const error = new Error("Update failed");
+		it("should return 401 if user is not authenticated", async () => {
+			req.body = { name: "Updated User" };
+			(getLoggedInUserId as jest.Mock).mockReturnValue(null);
+
+			await updateUser(req as Request, res as Response, next);
+
+			expect(next).toHaveBeenCalledWith(
+				new Error(AUTH_MESSAGES.NOT_AUTHENTICATED)
+			);
+			expect(userService.updateUser).not.toHaveBeenCalled();
+			expect(clearCache).not.toHaveBeenCalled();
+			expect(sendResponse).not.toHaveBeenCalled();
+		});
+
+		it("should handle service errors properly", async () => {
+			const error = new Error("Service Error");
+			req.body = { name: "Updated User" };
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 			(userService.updateUser as jest.Mock).mockRejectedValue(error);
-			mockReq.params = { id: userId };
-			mockReq.body = { name: "John Updated" };
 
-			await updateUser(mockReq as Request, mockRes as Response, mockNext);
+			await updateUser(req as Request, res as Response, next);
 
-			expect(mockNext).toHaveBeenCalledWith(error);
+			expect(next).toHaveBeenCalledWith(error);
+			expect(sendResponse).not.toHaveBeenCalled();
 		});
 	});
 });

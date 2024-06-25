@@ -15,10 +15,12 @@ const authenticate = async (req: any, res: any, next: any) => {
 			throw new Error(USER_MESSAGES.NOT_FOUND);
 		}
 		req.user = user;
+		
 		next();
 	} catch (error) {
         sendResponse(res, 401, { error: AUTH_MESSAGES.INVALID_TOKEN });
 	}
 };
+
 export default authenticate;
 

@@ -6,9 +6,6 @@ import { CONTRACT_MESSAGES, STRINGS } from "../util/constants";
 
 export const getContractsOfUser = async (userId: string) => {
 	try {
-		if (!userId) {
-			return await Contract.findAll();
-		}
 
 		const cashkicks = await Cashkick.findAll({
 			where: { userId: userId },
@@ -57,6 +54,7 @@ export const getContractsOfUser = async (userId: string) => {
 	}
 };
 
+
 export const getAllContracts = async () => {
 	try {
 		const contracts = await Contract.findAll();
@@ -70,7 +68,8 @@ export const getAllContracts = async () => {
 export const createContract = async (contracts: ContractBody[]) => {
 	try {
 		await Promise.all(
-			contracts.map(async (contract) => {
+			contracts.map(async(contract) => {
+
 				await Contract.create({
 					...contract,
 				});

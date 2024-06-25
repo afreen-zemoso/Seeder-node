@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import * as cashkickService from "../services/cashkickService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
-import { CASHKICK_MESSAGES } from "../util/constants";
+import { AUTH_MESSAGES, CASHKICK_MESSAGES } from "../util/constants";
 import { AuthenticatedRequest, UserCashkick } from "../interfaces";
-import { sendResponse } from "../util/helpers";
+import { clearCache, getLoggedInUserId, sendResponse } from "../util/helpers";
 
 export const getUserCashkicks = async (
 	req: AuthenticatedRequest,
@@ -15,14 +15,16 @@ export const getUserCashkicks = async (
 		let cashkicks: UserCashkick[] = req.cachedData;
 
 		if (!cashkicks) {
-			cashkicks = await cashkickService.getUserCashkicks(
-				req.params.userId
-			);
+			const userId = getLoggedInUserId(req);
+			
+			if (!userId) 
+				throw new Error(AUTH_MESSAGES.NOT_AUTHENTICATED);
 
-			if (req.user) {
-				const key = req.originalUrl + req.user.id;
-				redisClient.setEx(key, 3600, JSON.stringify(cashkicks));
-			}
+			cashkicks = await cashkickService.getUserCashkicks(userId);
+
+			const key = req.originalUrl + userId;
+			redisClient.setEx(key, 3600, JSON.stringify(cashkicks));
+			
 		}
         sendResponse(res, StatusCodes.OK, {
 			message: CASHKICK_MESSAGES.SUCCESS_FETCH,
@@ -40,7 +42,12 @@ export const createCashkick = async (
 	next: NextFunction
 ) => {
 	try {
-		const successMsg = await cashkickService.createCashkick(req.body);
+		const userId = getLoggedInUserId(req);
+			
+		if (!userId) 
+			throw new Error(AUTH_MESSAGES.NOT_AUTHENTICATED);
+		const successMsg = await cashkickService.createCashkick({...req.body, userId: userId});
+		clearCache();
 		sendResponse(res, StatusCodes.CREATED, { message: successMsg });
 	} catch (error) {
 		next(error);

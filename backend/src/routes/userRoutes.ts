@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as userController from "../controllers/user";
 import authenticate from "../middleware/authMiddleware";
-import { createUserRequestValidation, updateUserRequestValidation } from "../validations/user";
+import { updateUserRequestValidation } from "../validations/user";
 import { handleValidationErrors } from "../middleware/validationMiddleware";
 import cacheMiddleware from "../middleware/cacheMiddleware";
 

@@ -1,42 +1,33 @@
 import { Request, Response, NextFunction } from "express";
-import { getUserCashkicks, createCashkick } from "../../controllers/cashkick";
 import * as cashkickService from "../../services/cashkickService";
 import redisClient from "../../util/redisClient";
-import { CASHKICK_MESSAGES } from "../../util/constants";
+import { AUTH_MESSAGES, CASHKICK_MESSAGES } from "../../util/constants";
 import { AuthenticatedRequest, UserCashkick } from "../../interfaces";
-import { StatusCodes } from "http-status-codes";
-import { CashkicksStatus } from "../../enums";
-import * as helpers from "../../util/helpers";
+import { clearCache, getLoggedInUserId, sendResponse } from "../../util/helpers";
+import { createCashkick, getUserCashkicks } from "../../controllers/cashkick";
 
-jest.mock("../../util/helpers");
+
 jest.mock("../../services/cashkickService");
+jest.mock("../../util/helpers");
 jest.mock("../../util/redisClient", () => ({
 	setEx: jest.fn(),
 	quit: jest.fn().mockResolvedValue(null),
 }));
 
 describe("Cashkick Controller", () => {
-	const userId = "1";
-	const cashkicks: UserCashkick[] = [{
-		name: "Cashkick 1",
-		status: CashkicksStatus.PENDING,
-		maturity: new Date(),
-		totalReceived: 0,
-		totalFinanced: 0
-	}];
-	const newCashkickResponse = "Cashkick created successfully";
-
-	let mockReq: Partial<AuthenticatedRequest>;
-	let mockRes: Partial<Response>;
-	let mockNext: NextFunction;
+	let req: Partial<AuthenticatedRequest>;
+	let res: Partial<Response>;
+	let next: NextFunction;
 
 	beforeEach(() => {
-		mockReq = {};
-		mockRes = {
+		req = {
+			cachedData: undefined,
+		};
+		res = {
 			status: jest.fn().mockReturnThis(),
 			json: jest.fn(),
 		};
-		mockNext = jest.fn();
+		next = jest.fn();
 	});
 
 	afterEach(async () => {
@@ -45,149 +36,120 @@ describe("Cashkick Controller", () => {
 	});
 
 	describe("getUserCashkicks", () => {
-		it("should return cached cashkicks if available", async () => {
-			mockReq.cachedData = cashkicks;
-			mockReq.params = { userId };
+		it("should return cashkicks from cache if available", async () => {
+			req.cachedData = [
+				{ name: "Test Cashkick" },
+			] as UserCashkick[];
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 
 			await getUserCashkicks(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
-			expect(cashkickService.getUserCashkicks).not.toHaveBeenCalled();
 			expect(redisClient.setEx).not.toHaveBeenCalled();
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				{
-					message: CASHKICK_MESSAGES.SUCCESS_FETCH,
-					cashkicks,
-				}
-			);
+			expect(sendResponse).toHaveBeenCalledWith(res, expect.any(Number), {
+				message: CASHKICK_MESSAGES.SUCCESS_FETCH,
+				cashkicks: req.cachedData,
+			});
 		});
 
-		it("should return cashkicks for a user and cache the result if not cached", async () => {
+		it("should fetch cashkicks from service if not cached", async () => {
+			const cashkicks = [{ id: 1, name: "Test Cashkick" }];
+			req.cachedData = undefined;
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 			(cashkickService.getUserCashkicks as jest.Mock).mockResolvedValue(
 				cashkicks
 			);
-			mockReq.params = { userId };
-			mockReq.originalUrl = `/${userId}`;
-			mockReq.user = {
-				id: userId,
-				name: "john",
-				email: "john@gmail.com",
-				password: "john@123",
-			};
 
 			await getUserCashkicks(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
 			expect(cashkickService.getUserCashkicks).toHaveBeenCalledWith(
-				userId
+				"123"
 			);
 			expect(redisClient.setEx).toHaveBeenCalledWith(
-				`/${userId}${userId}`,
+				req.originalUrl + "123",
 				3600,
 				JSON.stringify(cashkicks)
 			);
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				{
-					message: CASHKICK_MESSAGES.SUCCESS_FETCH,
-					cashkicks,
-				}
-			);
+			expect(sendResponse).toHaveBeenCalledWith(res, expect.any(Number), {
+				message: CASHKICK_MESSAGES.SUCCESS_FETCH,
+				cashkicks,
+			});
 		});
 
-		it("should return cashkicks for a user without caching if user is not authenticated", async () => {
-			(cashkickService.getUserCashkicks as jest.Mock).mockResolvedValue(
-				cashkicks
-			);
-			mockReq.params = { userId };
-			mockReq.originalUrl = `/${userId}`;
-			mockReq.user = undefined;
+		it("should return 401 if user is not authenticated", async () => {
+			(getLoggedInUserId as jest.Mock).mockReturnValue(null);
 
 			await getUserCashkicks(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
+				req as AuthenticatedRequest,
+				res as Response,
+				next
 			);
 
-			expect(cashkickService.getUserCashkicks).toHaveBeenCalledWith(
-				userId
+			expect(next).toHaveBeenCalledWith(
+				new Error(AUTH_MESSAGES.NOT_AUTHENTICATED)
 			);
-			expect(redisClient.setEx).not.toHaveBeenCalled();
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.OK,
-				{
-					message: CASHKICK_MESSAGES.SUCCESS_FETCH,
-					cashkicks,
-				}
-			);
-		});
-
-		it("should handle errors and call next with the error", async () => {
-			const error = new Error("Fetch failed");
-			(cashkickService.getUserCashkicks as jest.Mock).mockRejectedValue(
-				error
-			);
-			mockReq.params = { userId };
-
-			await getUserCashkicks(
-				mockReq as AuthenticatedRequest,
-				mockRes as Response,
-				mockNext
-			);
-
-			expect(mockNext).toHaveBeenCalledWith(error);
+			expect(sendResponse).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("createCashkick", () => {
-		it("should create a cashkick and return the success message", async () => {
+		it("should create a new cashkick", async () => {
+			const successMsg = CASHKICK_MESSAGES.SUCCESS_ADD;
+			req.body = {
+				name: "New Cashkick",
+				totalReceived: 1000,
+				contracts: [],
+			};
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 			(cashkickService.createCashkick as jest.Mock).mockResolvedValue(
-				newCashkickResponse
+				successMsg
 			);
-			mockReq.body = { name: "Cashkick 1", totalReceived: 5000, userId };
 
-			await createCashkick(
-				mockReq as Request,
-				mockRes as Response,
-				mockNext
-			);
+			await createCashkick(req as Request, res as Response, next);
 
 			expect(cashkickService.createCashkick).toHaveBeenCalledWith(
-				mockReq.body
+				expect.objectContaining({ ...req.body, userId: "123" })
 			);
-			expect(helpers.sendResponse).toHaveBeenCalledWith(
-				mockRes,
-				StatusCodes.CREATED,
-				{
-					message: newCashkickResponse,
-				}
-			);
+			expect(clearCache).toHaveBeenCalled();
+			expect(sendResponse).toHaveBeenCalledWith(res, expect.any(Number), {
+				message: successMsg,
+			});
 		});
 
-		it("should handle errors and call next with the error", async () => {
-			const error = new Error("Creation failed");
+		it("should return 401 if user is not authenticated", async () => {
+			(getLoggedInUserId as jest.Mock).mockReturnValue(null);
+
+			await createCashkick(req as Request, res as Response, next);
+
+			expect(next).toHaveBeenCalledWith(
+				new Error(AUTH_MESSAGES.NOT_AUTHENTICATED)
+			);
+			expect(sendResponse).not.toHaveBeenCalled();
+		});
+
+		it("should handle service errors", async () => {
+			const error = new Error("Service Error");
+			req.body = {
+				name: "New Cashkick",
+				totalReceived: 1000,
+				contracts: [],
+			};
+			(getLoggedInUserId as jest.Mock).mockReturnValue("123");
 			(cashkickService.createCashkick as jest.Mock).mockRejectedValue(
 				error
 			);
-			mockReq.body = { name: "Cashkick 1", totalReceived: 5000, userId };
 
-			await createCashkick(
-				mockReq as Request,
-				mockRes as Response,
-				mockNext
-			);
+			await createCashkick(req as Request, res as Response, next);
 
-			expect(mockNext).toHaveBeenCalledWith(error);
+			expect(next).toHaveBeenCalledWith(error);
+			expect(sendResponse).not.toHaveBeenCalled();
 		});
 	});
 });

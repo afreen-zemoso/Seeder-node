@@ -1,123 +1,97 @@
 import { Response, NextFunction } from "express";
 import redisClient from "../../util/redisClient";
 import { AuthenticatedRequest } from "../../interfaces";
-import { STRINGS } from "../../util/constants";
+import { AUTH_MESSAGES } from "../../util/constants";
+import { getLoggedInUserId } from "../../util/helpers";
 import cacheMiddleware from "../../middleware/cacheMiddleware";
 
-// Mocking redisClient
+jest.mock("../../util/helpers");
 jest.mock("../../util/redisClient", () => ({
 	get: jest.fn(),
+	quit: jest.fn().mockResolvedValue(null),
 }));
 
 describe("cacheMiddleware", () => {
-	let mockReq: Partial<AuthenticatedRequest>;
-	let mockRes: Partial<Response>;
-	let mockNext: NextFunction;
+	let req: Partial<AuthenticatedRequest>;
+	let res: Partial<Response>;
+	let next: NextFunction;
 
 	beforeEach(() => {
-		mockReq = {
-			originalUrl: "/some-url",
-			query: {},
-			user: {
-				id: "123",
-				name: "john",
-				email: "john@gmail.com",
-				password: "john@123"
-			},
+		req = {
+			originalUrl: "/api/resource",
+			cachedData: undefined,
 		};
-		mockRes = {};
-		mockNext = jest.fn();
-		jest.clearAllMocks();
+		res = {};
+		next = jest.fn();
 	});
 
-	it("should call next if req.user is not defined", async () => {
-		mockReq.user = undefined;
+	afterEach(async () => {
+		jest.clearAllMocks();
+		await redisClient.quit();
+	});
 
-		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
+	it("should throw an error if user is not authenticated", async () => {
+		(getLoggedInUserId as jest.Mock).mockReturnValue(null);
+
+		await expect(
+			cacheMiddleware(req as AuthenticatedRequest, res as Response, next)
+		).rejects.toThrow(AUTH_MESSAGES.NOT_AUTHENTICATED);
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("should set cached data if present in Redis", async () => {
+		const userId = "123";
+		const cachedData = { data: "cachedData" };
+		(getLoggedInUserId as jest.Mock).mockReturnValue(userId);
+		(redisClient.get as jest.Mock).mockResolvedValue(
+			JSON.stringify(cachedData)
 		);
 
-		expect(mockNext).toHaveBeenCalled();
+		await cacheMiddleware(
+			req as AuthenticatedRequest,
+			res as Response,
+			next
+		);
+
+		expect(redisClient.get).toHaveBeenCalledWith(req.originalUrl + userId);
+		expect(req.cachedData).toEqual(cachedData);
+		expect(next).toHaveBeenCalled();
 	});
 
-	it("should call next and not set req.cachedData if there is no cached data", async () => {
+	it("should not set cached data if not present in Redis", async () => {
+		const userId = "123";
+		(getLoggedInUserId as jest.Mock).mockReturnValue(userId);
 		(redisClient.get as jest.Mock).mockResolvedValue(null);
 
 		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
+			req as AuthenticatedRequest,
+			res as Response,
+			next
 		);
 
-		expect(redisClient.get).toHaveBeenCalledWith(
-			"/some-url123" + STRINGS.CONTRACTS
-		);
-		expect(mockReq.cachedData).toBeUndefined();
-		expect(mockNext).toHaveBeenCalled();
+		expect(redisClient.get).toHaveBeenCalledWith(req.originalUrl + userId);
+		expect(req.cachedData).toBeUndefined();
+		expect(next).toHaveBeenCalled();
 	});
 
-	it("should set req.cachedData if there is cached data", async () => {
-		const cachedData = JSON.stringify({ data: "some data" });
-		(redisClient.get as jest.Mock).mockResolvedValue(cachedData);
-
-		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
-		);
-
-		expect(redisClient.get).toHaveBeenCalledWith(
-			"/some-url123" + STRINGS.CONTRACTS
-		);
-		expect(mockReq.cachedData).toEqual({ data: "some data" });
-		expect(mockNext).toHaveBeenCalled();
-	});
-
-	it("should log an error and call next if there is an error retrieving data from the cache", async () => {
-		const error = new Error("Cache error");
+	it("should handle errors when retrieving data from Redis", async () => {
+		const userId = "123";
+		const error = new Error("Redis error");
+		(getLoggedInUserId as jest.Mock).mockReturnValue(userId);
 		(redisClient.get as jest.Mock).mockRejectedValue(error);
 		console.error = jest.fn();
 
 		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
+			req as AuthenticatedRequest,
+			res as Response,
+			next
 		);
 
+		expect(redisClient.get).toHaveBeenCalledWith(req.originalUrl + userId);
 		expect(console.error).toHaveBeenCalledWith(
 			"Error retrieving data from cache:",
 			error
 		);
-		expect(mockNext).toHaveBeenCalled();
-	});
-
-	it("should modify the cache key if req.query.userId is not present", async () => {
-		mockReq.query = {};
-
-		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
-		);
-
-		expect(redisClient.get).toHaveBeenCalledWith(
-			"/some-url123" + STRINGS.CONTRACTS
-		);
-		expect(mockNext).toHaveBeenCalled();
-	});
-
-	it("should not modify the cache key if req.query.userId is present", async () => {
-		mockReq.query = { userId: "456" };
-
-		await cacheMiddleware(
-			mockReq as AuthenticatedRequest,
-			mockRes as Response,
-			mockNext
-		);
-
-		expect(redisClient.get).toHaveBeenCalledWith("/some-url123");
-		expect(mockNext).toHaveBeenCalled();
+		expect(next).toHaveBeenCalled();
 	});
 });
