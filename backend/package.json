@@ -1,0 +1,45 @@
+{
+	"name": "seeder-node",
+	"version": "1.0.0",
+	"description": "seeder application backend",
+	"main": "app.ts",
+	"scripts": {
+		"test": "jest --coverage",
+		"start": "nodemon src/app.ts",
+		"start-server": "node app.ts"
+	},
+	"author": "afreen mohammed",
+	"license": "ISC",
+	"dependencies": {
+		"@types/redis": "^4.0.11",
+		"@types/sequelize": "^4.28.20",
+		"bcrypt": "^5.1.1",
+		"body-parser": "^1.20.2",
+		"connect-session-sequelize": "^7.1.7",
+		"dotenv": "^16.4.5",
+		"express": "^4.19.2",
+		"express-session": "^1.18.0",
+		"express-validator": "^7.1.0",
+		"http-status-codes": "^2.3.0",
+		"jsonwebtoken": "^9.0.2",
+		"mysql2": "^3.9.8",
+		"redis": "^4.6.14",
+		"sequelize": "^6.37.3",
+		"sequelize-typescript": "^2.1.6",
+		"typescript": "^5.4.5"
+	},
+	"devDependencies": {
+		"@types/bcrypt": "^5.0.2",
+		"@types/express": "^4.17.21",
+		"@types/jest": "^29.5.12",
+		"@types/jsonwebtoken": "^9.0.6",
+		"@types/node": "^20.12.12",
+		"@types/supertest": "^6.0.2",
+		"jest": "^29.7.0",
+		"nodemon": "^1.18.3",
+		"sequelize-test-helpers": "^1.4.3",
+		"sqlite3": "^5.1.7",
+		"ts-jest": "^29.1.4",
+		"ts-node": "^10.9.2"
+	}
+}
