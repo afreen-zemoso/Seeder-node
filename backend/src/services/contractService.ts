@@ -20,7 +20,9 @@ export const getContractsOfUser = async (userId: string) => {
 				},
 			],
 		});
-		const contracts: any[] = [];
+
+		const contracts = [];
+		const uniqueContractIds = new Set();
 
 		for (const cashkick of cashkicks) {
 			const cashkickContracts = cashkick.dataValues.contracts;
@@ -33,12 +35,17 @@ export const getContractsOfUser = async (userId: string) => {
 				});
 
 				if (cashkicks_contracts) {
-					const { Cashkick_Contract, ...contractWithoutAssociation } =
-						contract.get({ plain: true });
-					contracts.push({
-						...contractWithoutAssociation,
-						totalFinanced: cashkicks_contracts.totalFinanced,
-					});
+					if (!uniqueContractIds.has(contract.id)) {
+						const {
+							Cashkick_Contract,
+							...contractWithoutAssociation
+						} = contract.get({ plain: true });
+						contracts.push({
+							...contractWithoutAssociation,
+							totalFinanced: cashkicks_contracts.totalFinanced,
+						});
+						uniqueContractIds.add(contract.id);
+					}
 				}
 			}
 		}
