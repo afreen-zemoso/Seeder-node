@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import * as contractService from "../services/contractService";
 import { StatusCodes } from "http-status-codes";
 import redisClient from "../util/redisClient";
-import { AUTH_MESSAGES, CONTRACT_MESSAGES, STRINGS } from "../util/constants";
+import { AUTH_MESSAGES, CONTRACT_MESSAGES } from "../util/constants";
 import { AuthenticatedRequest, Contract } from "../interfaces";
 import { clearCache, getLoggedInUserId, sendResponse } from "../util/helpers";
 

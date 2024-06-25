@@ -15,7 +15,8 @@ export const AUTH_MESSAGES = {
 	PASSWORD_INCORRECT: "Password is Incorrect",
 	ACCESS_DENIED: "Access denied, no token provided",
 	INVALID_TOKEN: "Invalid token",
-	NOT_AUTHENTICATED: "Not Authenticated"
+	NOT_AUTHENTICATED: "Not Authenticated",
+	ERROR_CACHE_FETCH: "Error retrieving data from cache:",
 };
 export const CASHKICK_MESSAGES = {
 	SUCCESS_FETCH: "Successfully fetched cashkicks",

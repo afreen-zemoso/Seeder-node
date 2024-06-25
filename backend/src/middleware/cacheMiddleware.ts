@@ -1,7 +1,7 @@
 import {  Response, NextFunction } from "express";
 import redisClient from "../util/redisClient";
 import { AuthenticatedRequest } from "../interfaces";
-import { AUTH_MESSAGES, STRINGS } from "../util/constants";
+import { AUTH_MESSAGES } from "../util/constants";
 import { getLoggedInUserId } from "../util/helpers";
 
 const cacheMiddleware = async (
@@ -21,7 +21,8 @@ const cacheMiddleware = async (
 			req.cachedData = JSON.parse(data);
 		}
 	} catch (err) {
-		console.error("Error retrieving data from cache:", err);	}
+		console.error(AUTH_MESSAGES.ERROR_CACHE_FETCH, err);
+	}
 
 	next();
 };
